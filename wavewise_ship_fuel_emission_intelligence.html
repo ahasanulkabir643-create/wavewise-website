@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WaveWise</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&display=swap');
+
+  :root {
+    --ocean-deep: #020d1a;
+    --ocean-dark: #040f20;
+    --ocean-mid: #071428;
+    --ocean-surface: #0b1e3d;
+    --ocean-glow: #0d2448;
+    --blue-calm: #1a6cf5;
+    --blue-light: #3b8fff;
+    --blue-pale: #6babff;
+    --teal-accent: #00c9b8;
+    --orange-mod: #f58c1a;
+    --red-rough: #f53c2a;
+    --text-primary: #e8f0fc;
+    --text-secondary: #7a9ac8;
+    --text-muted: #3d5a87;
+    --border-subtle: rgba(26,108,245,0.12);
+    --border-mid: rgba(26,108,245,0.22);
+    --border-bright: rgba(59,143,255,0.35);
+    --card-bg: rgba(7,20,40,0.8);
+    --card-bg2: rgba(11,30,61,0.6);
+    --glow-blue: 0 0 24px rgba(26,108,245,0.15);
+    --glow-teal: 0 0 20px rgba(0,201,184,0.12);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: 'Space Grotesk', sans-serif;
+    background: var(--ocean-deep);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Ocean animated background */
+  .ocean-bg {
+    position: fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none;
+  }
+  .wave-layer {
+    position:absolute; bottom:0; width:200%; height:180px;
+    background: linear-gradient(transparent, rgba(26,108,245,0.04));
+    border-radius: 50%;
+    animation: waveFloat 8s ease-in-out infinite;
+  }
+  .wave-layer:nth-child(2) {
+    bottom: 20px; opacity:0.5; animation-duration:11s; animation-delay:-3s;
+    background: linear-gradient(transparent, rgba(0,201,184,0.03));
+  }
+  .wave-layer:nth-child(3) {
+    bottom: 40px; opacity:0.3; animation-duration:14s; animation-delay:-7s;
+  }
+  @keyframes waveFloat {
+    0%,100%{transform:translateX(-25%) scaleY(1);}
+    50%{transform:translateX(-20%) scaleY(1.08);}
+  }
+  .star-field {
+    position:absolute; inset:0;
+    background-image: 
+      radial-gradient(1px 1px at 15% 12%, rgba(255,255,255,0.25) 0%, transparent 100%),
+      radial-gradient(1px 1px at 72% 8%, rgba(255,255,255,0.18) 0%, transparent 100%),
+      radial-gradient(1px 1px at 38% 22%, rgba(255,255,255,0.15) 0%, transparent 100%),
+      radial-gradient(1px 1px at 88% 18%, rgba(255,255,255,0.2) 0%, transparent 100%),
+      radial-gradient(1px 1px at 55% 5%, rgba(255,255,255,0.12) 0%, transparent 100%),
+      radial-gradient(2px 2px at 25% 6%, rgba(59,143,255,0.3) 0%, transparent 100%),
+      radial-gradient(2px 2px at 65% 15%, rgba(0,201,184,0.2) 0%, transparent 100%);
+  }
+
+  /* Layout */
+  .app { position:relative; z-index:1; }
+
+  /* NAV */
+  nav {
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 18px 40px;
+    border-bottom: 1px solid var(--border-subtle);
+    background: rgba(2,13,26,0.7);
+    backdrop-filter: blur(12px);
+    position:sticky; top:0; z-index:100;
+  }
+  .nav-logo {
+    font-family:'Syne',sans-serif; font-size:22px; font-weight:800;
+    background: linear-gradient(120deg, var(--blue-light), var(--teal-accent));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    letter-spacing:-0.5px;
+  }
+  .nav-logo span { -webkit-text-fill-color: rgba(0,201,184,0.5); }
+  .nav-tabs {
+    display:flex; gap:4px;
+  }
+  .tab-btn {
+    padding: 8px 18px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family:'Space Grotesk',sans-serif;
+    font-size:13px; font-weight:500;
+    cursor:pointer; transition: all 0.2s;
+    letter-spacing:0.3px;
+  }
+  .tab-btn:hover { color:var(--text-primary); border-color:var(--border-mid); }
+  .tab-btn.active {
+    background: rgba(26,108,245,0.12);
+    border-color: var(--border-bright);
+    color: var(--blue-pale);
+  }
+
+  /* Pages */
+  .page { display:none; }
+  .page.active { display:block; }
+
+  /* HERO */
+  .hero {
+    min-height: 88vh; display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    padding: 60px 40px; text-align:center; position:relative;
+  }
+  .hero-badge {
+    display:inline-flex; align-items:center; gap:8px;
+    padding: 6px 16px;
+    border: 1px solid rgba(0,201,184,0.25);
+    border-radius: 100px;
+    background: rgba(0,201,184,0.05);
+    color: var(--teal-accent);
+    font-size:12px; font-weight:500; letter-spacing:1px; text-transform:uppercase;
+    margin-bottom:28px;
+  }
+  .hero-badge::before {
+    content:''; width:6px; height:6px; border-radius:50%;
+    background:var(--teal-accent);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.85)} }
+  
+  .hero-title {
+    font-family:'Syne',sans-serif; font-size:64px; font-weight:800;
+    line-height:1.05; letter-spacing:-2px; margin-bottom:20px;
+    max-width:800px;
+  }
+  .hero-title .accent { 
+    background: linear-gradient(135deg, var(--blue-light) 0%, var(--teal-accent) 100%);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  }
+  .hero-sub {
+    font-size:18px; color:var(--text-secondary); max-width:560px;
+    line-height:1.65; margin-bottom:40px; font-weight:400;
+  }
+  .hero-ctas {
+    display:flex; gap:14px; flex-wrap:wrap; justify-content:center; margin-bottom:80px;
+  }
+  .cta-primary {
+    padding: 14px 32px;
+    background: linear-gradient(135deg, #1a6cf5, #0d52c8);
+    border: none; border-radius:10px;
+    color:#fff; font-family:'Space Grotesk',sans-serif;
+    font-size:15px; font-weight:600; cursor:pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 20px rgba(26,108,245,0.3);
+  }
+  .cta-primary:hover { transform:translateY(-2px); box-shadow:0 8px 30px rgba(26,108,245,0.4); }
+  .cta-secondary {
+    padding: 14px 32px;
+    background: rgba(26,108,245,0.08);
+    border: 1px solid var(--border-bright);
+    border-radius:10px;
+    color:var(--blue-pale); font-family:'Space Grotesk',sans-serif;
+    font-size:15px; font-weight:500; cursor:pointer;
+    transition: all 0.2s;
+  }
+  .cta-secondary:hover { background:rgba(26,108,245,0.14); }
+
+  /* Ship animation */
+  .ship-scene {
+    width:100%; max-width:700px; height:120px; position:relative; margin-bottom:20px;
+  }
+  .ship-svg { animation: shipRock 6s ease-in-out infinite; transform-origin:center; }
+  @keyframes shipRock { 0%,100%{transform:translateY(0) rotate(-1deg)} 50%{transform:translateY(-8px) rotate(1deg)} }
+  .wave-svg-anim { position:absolute; bottom:0; width:100%; }
+
+  /* Stat cards hero */
+  .hero-stats {
+    display:flex; gap:24px; flex-wrap:wrap; justify-content:center;
+  }
+  .hero-stat {
+    padding:20px 28px; background:var(--card-bg);
+    border:1px solid var(--border-subtle); border-radius:14px;
+    text-align:center; min-width:160px;
+    backdrop-filter:blur(10px);
+  }
+  .hero-stat .val {
+    font-family:'Syne',sans-serif; font-size:32px; font-weight:700;
+    line-height:1;
+  }
+  .hero-stat .lbl {
+    font-size:11px; color:var(--text-muted); text-transform:uppercase;
+    letter-spacing:1px; margin-top:6px;
+  }
+  .val-blue { color:var(--blue-light); }
+  .val-teal { color:var(--teal-accent); }
+  .val-orange { color:var(--orange-mod); }
+
+  /* Problem/Solution sections */
+  .section {
+    padding: 80px 40px; max-width:1100px; margin:0 auto;
+  }
+  .section-label {
+    font-size:11px; color:var(--teal-accent); text-transform:uppercase;
+    letter-spacing:2px; font-weight:500; margin-bottom:12px;
+  }
+  .section-title {
+    font-family:'Syne',sans-serif; font-size:38px; font-weight:700;
+    line-height:1.15; margin-bottom:40px; max-width:600px;
+    letter-spacing:-1px;
+  }
+  .problem-cards {
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px;
+  }
+  .problem-card {
+    padding:28px; border-radius:14px;
+    border: 1px solid var(--border-subtle);
+    background:var(--card-bg);
+    backdrop-filter:blur(10px);
+  }
+  .problem-card .icon-wrap {
+    width:44px; height:44px; border-radius:12px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:20px; margin-bottom:16px;
+  }
+  .icon-red { background:rgba(245,60,42,0.12); }
+  .icon-orange { background:rgba(245,140,26,0.12); }
+  .icon-blue { background:rgba(26,108,245,0.12); }
+  .icon-teal { background:rgba(0,201,184,0.12); }
+  .problem-card h3 { font-size:15px; font-weight:600; margin-bottom:8px; }
+  .problem-card p { font-size:13px; color:var(--text-secondary); line-height:1.6; }
+
+  /* PAGE: SIMULATION */
+  .sim-page { padding:40px; max-width:1200px; margin:0 auto; }
+  .page-header { margin-bottom:36px; }
+  .page-title {
+    font-family:'Syne',sans-serif; font-size:32px; font-weight:700;
+    letter-spacing:-0.8px; margin-bottom:8px;
+  }
+  .page-sub { font-size:14px; color:var(--text-secondary); }
+
+  .sim-layout {
+    display:grid; grid-template-columns:320px 1fr; gap:24px;
+  }
+
+  /* Input panel */
+  .input-panel {
+    background:var(--card-bg); border:1px solid var(--border-subtle);
+    border-radius:16px; padding:28px;
+  }
+  .panel-title {
+    font-size:12px; color:var(--text-muted); text-transform:uppercase;
+    letter-spacing:1.5px; font-weight:600; margin-bottom:24px;
+  }
+  .input-group { margin-bottom:28px; }
+  .input-label {
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:10px;
+  }
+  .input-label span:first-child {
+    font-size:13px; color:var(--text-secondary); font-weight:500;
+  }
+  .input-val {
+    font-size:14px; font-weight:700;
+    padding: 3px 10px; border-radius:6px;
+    background:rgba(26,108,245,0.1); border:1px solid var(--border-mid);
+    color:var(--blue-pale);
+    font-family:'Syne',sans-serif;
+  }
+  input[type=range] {
+    width:100%; height:4px; border-radius:2px; cursor:pointer;
+    -webkit-appearance:none; appearance:none; outline:none;
+    background: linear-gradient(to right, var(--blue-light) 0%, var(--blue-light) var(--pct, 50%), rgba(26,108,245,0.2) var(--pct, 50%), rgba(26,108,245,0.2) 100%);
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance:none; width:16px; height:16px; border-radius:50%;
+    background:#fff; border:2px solid var(--blue-light);
+    box-shadow: 0 0 8px rgba(26,108,245,0.4);
+  }
+  .condition-pills {
+    display:flex; gap:8px; flex-wrap:wrap;
+  }
+  .cond-pill {
+    padding: 6px 14px; border-radius:100px; font-size:12px; font-weight:500;
+    cursor:pointer; border:1px solid transparent; transition:all 0.2s;
+    color:var(--text-secondary); background:rgba(255,255,255,0.04);
+    border-color:var(--border-subtle);
+  }
+  .cond-pill.calm.active { background:rgba(0,201,184,0.12); border-color:rgba(0,201,184,0.35); color:var(--teal-accent); }
+  .cond-pill.mod.active { background:rgba(245,140,26,0.12); border-color:rgba(245,140,26,0.35); color:var(--orange-mod); }
+  .cond-pill.rough.active { background:rgba(245,60,42,0.12); border-color:rgba(245,60,42,0.35); color:var(--red-rough); }
+  .cond-pill.severe.active { background:rgba(180,0,0,0.15); border-color:rgba(200,0,0,0.4); color:#ff6b6b; }
+
+  .run-btn {
+    width:100%; padding:14px;
+    background: linear-gradient(135deg,#1a6cf5,#0d52c8);
+    border:none; border-radius:10px; color:#fff;
+    font-family:'Space Grotesk',sans-serif; font-size:14px; font-weight:700;
+    cursor:pointer; transition:all 0.2s; letter-spacing:0.3px;
+    margin-top:8px;
+    box-shadow: 0 4px 16px rgba(26,108,245,0.25);
+  }
+  .run-btn:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(26,108,245,0.35); }
+
+  /* Output panel */
+  .output-panel { display:flex; flex-direction:column; gap:16px; }
+
+  .metric-grid {
+    display:grid; grid-template-columns:repeat(4,1fr); gap:12px;
+  }
+  .metric-card {
+    background:var(--card-bg); border:1px solid var(--border-subtle);
+    border-radius:14px; padding:20px 16px; text-align:center;
+    transition:border-color 0.3s, box-shadow 0.3s;
+  }
+  .metric-card:hover { border-color:var(--border-bright); }
+  .metric-icon { font-size:20px; margin-bottom:10px; display:block; }
+  .metric-val {
+    font-family:'Syne',sans-serif; font-size:28px; font-weight:700;
+    line-height:1; margin-bottom:4px;
+  }
+  .metric-unit { font-size:11px; color:var(--text-muted); }
+  .metric-lbl { font-size:11px; color:var(--text-secondary); margin-top:6px; text-transform:uppercase; letter-spacing:0.8px; }
+  .metric-delta {
+    font-size:10px; margin-top:6px; padding:2px 8px; border-radius:100px;
+    display:inline-block;
+  }
+  .delta-up { background:rgba(245,60,42,0.12); color:var(--red-rough); }
+  .delta-ok { background:rgba(0,201,184,0.1); color:var(--teal-accent); }
+
+  /* Charts */
+  .chart-grid {
+    display:grid; grid-template-columns:1fr 1fr; gap:16px;
+  }
+  .chart-card {
+    background:var(--card-bg); border:1px solid var(--border-subtle);
+    border-radius:14px; padding:20px;
+  }
+  .chart-title { font-size:12px; color:var(--text-secondary); font-weight:500; margin-bottom:16px; text-transform:uppercase; letter-spacing:0.8px; }
+  .chart-wrap { position:relative; height:220px; }
+
+  /* Decision panel */
+  .decision-card {
+    background:var(--card-bg); border:1px solid var(--border-subtle);
+    border-radius:14px; padding:24px;
+  }
+  .decision-header {
+    display:flex; align-items:center; gap:12px; margin-bottom:16px;
+  }
+  .decision-indicator {
+    width:10px; height:10px; border-radius:50%; flex-shrink:0;
+    animation: glow-pulse 2s ease-in-out infinite;
+  }
+  @keyframes glow-pulse { 0%,100%{box-shadow:0 0 0 0 currentColor} 50%{box-shadow:0 0 0 4px transparent} }
+  .decision-title { font-family:'Syne',sans-serif; font-size:16px; font-weight:700; }
+  .recommendation-text {
+    font-size:14px; line-height:1.65; color:var(--text-secondary); margin-bottom:14px;
+  }
+  .recommendation-text strong { font-weight:600; }
+  .rationale-tags { display:flex; gap:8px; flex-wrap:wrap; }
+  .rationale-tag {
+    font-size:11px; padding:4px 12px; border-radius:100px;
+    border:1px solid var(--border-subtle); color:var(--text-muted);
+  }
+
+  /* WAVE PREDICTION PAGE */
+  .wave-page { padding:40px; max-width:1100px; margin:0 auto; }
+  .wave-layout { display:grid; grid-template-columns:300px 1fr; gap:24px; }
+  .trend-badge {
+    display:inline-flex; align-items:center; gap:6px;
+    padding:6px 14px; border-radius:8px; font-size:13px; font-weight:600;
+    margin-top:12px;
+  }
+  .trend-inc { background:rgba(245,60,42,0.1); border:1px solid rgba(245,60,42,0.25); color:var(--red-rough); }
+  .trend-dec { background:rgba(0,201,184,0.1); border:1px solid rgba(0,201,184,0.25); color:var(--teal-accent); }
+  .trend-stable { background:rgba(245,140,26,0.1); border:1px solid rgba(245,140,26,0.25); color:var(--orange-mod); }
+  .prediction-display {
+    text-align:center; padding:32px 24px;
+    background:rgba(26,108,245,0.05); border:1px solid var(--border-mid);
+    border-radius:12px; margin-top:20px;
+  }
+  .pred-label { font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1.5px; margin-bottom:8px; }
+  .pred-val {
+    font-family:'Syne',sans-serif; font-size:52px; font-weight:800;
+    color:var(--blue-light); line-height:1;
+  }
+  .pred-unit { font-size:16px; color:var(--text-muted); font-weight:400; }
+
+  /* Transparency section */
+  .transparency-card {
+    background:var(--card-bg); border:1px solid rgba(0,201,184,0.12);
+    border-radius:14px; padding:24px; margin-top:16px;
+  }
+  .transparency-title {
+    font-size:12px; color:var(--teal-accent); text-transform:uppercase;
+    letter-spacing:1.5px; font-weight:600; margin-bottom:16px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .model-eq {
+    font-size:13px; line-height:1.9; color:var(--text-secondary);
+    font-family:monospace; background:rgba(26,108,245,0.04);
+    padding:14px 16px; border-radius:8px; border-left:2px solid var(--border-mid);
+    margin-bottom:12px;
+  }
+  .model-eq .eq-highlight { color:var(--blue-pale); font-weight:600; }
+
+  /* Comparison table */
+  .comp-table {
+    width:100%; border-collapse:collapse; font-size:13px;
+  }
+  .comp-table th {
+    text-align:left; padding:10px 14px; font-size:11px;
+    text-transform:uppercase; letter-spacing:1px; color:var(--text-muted);
+    font-weight:500; border-bottom:1px solid var(--border-subtle);
+  }
+  .comp-table td {
+    padding:12px 14px; border-bottom:1px solid rgba(26,108,245,0.06);
+    color:var(--text-secondary);
+  }
+  .comp-table tr:last-child td { border-bottom:none; }
+  .comp-table tr:hover td { background:rgba(26,108,245,0.03); }
+  .cond-dot {
+    display:inline-block; width:8px; height:8px; border-radius:50%;
+    margin-right:8px; vertical-align:middle;
+  }
+
+  /* Mobile */
+  @media(max-width:768px){
+    .hero-title{font-size:38px;}
+    .sim-layout{grid-template-columns:1fr;}
+    .metric-grid{grid-template-columns:repeat(2,1fr);}
+    .chart-grid{grid-template-columns:1fr;}
+    .wave-layout{grid-template-columns:1fr;}
+    nav{padding:14px 20px;}
+    .hero{padding:40px 20px;}
+    .sim-page,.wave-page,.section{padding:24px 20px;}
+    .nav-tabs .tab-btn{padding:7px 12px;font-size:12px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="ocean-bg">
+  <div class="star-field"></div>
+  <div class="wave-layer"></div>
+  <div class="wave-layer"></div>
+  <div class="wave-layer"></div>
+</div>
+
+<div class="app">
+  <nav>
+    <div class="nav-logo">Wave<span>Wise</span></div>
+    <div class="nav-tabs">
+      <button class="tab-btn active" onclick="showPage('home')">Home</button>
+      <button class="tab-btn" onclick="showPage('wave')">Wave Prediction</button>
+      <button class="tab-btn" onclick="showPage('sim')">Simulation</button>
+      <button class="tab-btn" onclick="showPage('viz')">Visualization</button>
+    </div>
+  </nav>
+
+  <!-- HOME PAGE -->
+  <div id="page-home" class="page active">
+    <div class="hero">
+      <div class="hero-badge">Maritime Intelligence Platform</div>
+      <h1 class="hero-title">Navigate Smarter.<br><span class="accent">Sail Efficiently.</span></h1>
+      <p class="hero-sub">Understand and optimize ship performance under changing sea conditions. Predict waves, simulate impact, reduce emissions.</p>
+      <div class="hero-ctas">
+        <button class="cta-primary" onclick="showPage('sim')">Start Simulation</button>
+        <button class="cta-secondary" onclick="showPage('wave')">View Live Conditions</button>
+      </div>
+
+      <!-- Ship SVG scene -->
+      <div class="ship-scene">
+        <svg class="ship-svg" viewBox="0 0 700 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;position:absolute;top:0;">
+          <g transform="translate(230,8)">
+            <!-- Hull -->
+            <path d="M0 38 Q120 38 240 38 L220 56 Q120 62 20 56 Z" fill="#0d2448" stroke="#1a6cf5" stroke-width="1.2"/>
+            <!-- Superstructure -->
+            <rect x="60" y="14" width="100" height="26" rx="6" fill="#071428" stroke="#1a4a9a" stroke-width="0.8"/>
+            <rect x="80" y="4" width="60" height="14" rx="4" fill="#040f20" stroke="#1a4a9a" stroke-width="0.8"/>
+            <!-- Windows -->
+            <rect x="68" y="20" width="10" height="8" rx="1" fill="#3b8fff" opacity="0.7"/>
+            <rect x="84" y="20" width="10" height="8" rx="1" fill="#3b8fff" opacity="0.6"/>
+            <rect x="100" y="20" width="10" height="8" rx="1" fill="#3b8fff" opacity="0.8"/>
+            <rect x="116" y="20" width="10" height="8" rx="1" fill="#3b8fff" opacity="0.5"/>
+            <rect x="132" y="20" width="10" height="8" rx="1" fill="#3b8fff" opacity="0.7"/>
+            <!-- Funnel -->
+            <rect x="148" y="8" width="12" height="20" rx="3" fill="#040f20" stroke="#1a6cf5" stroke-width="0.6"/>
+            <!-- Smoke -->
+            <circle cx="154" cy="4" r="3" fill="rgba(100,150,255,0.15)"/>
+            <circle cx="158" cy="0" r="2" fill="rgba(100,150,255,0.1)"/>
+            <!-- Mast -->
+            <line x1="90" y1="4" x2="90" y2="-8" stroke="#3b8fff" stroke-width="0.8"/>
+            <line x1="90" y1="-4" x2="106" y2="-4" stroke="#3b8fff" stroke-width="0.6"/>
+          </g>
+        </svg>
+        <!-- Waves -->
+        <svg viewBox="0 0 700 50" fill="none" xmlns="http://www.w3.org/2000/svg" style="position:absolute;bottom:0;width:100%;">
+          <path d="M0 30 Q87.5 10 175 30 Q262.5 50 350 30 Q437.5 10 525 30 Q612.5 50 700 30 L700 50 L0 50 Z" fill="rgba(26,108,245,0.08)" stroke="rgba(26,108,245,0.3)" stroke-width="1"/>
+          <path d="M0 35 Q87.5 18 175 35 Q262.5 52 350 35 Q437.5 18 525 35 Q612.5 52 700 35 L700 50 L0 50 Z" fill="rgba(0,201,184,0.04)" stroke="rgba(0,201,184,0.15)" stroke-width="0.8"/>
+        </svg>
+      </div>
+
+      <div class="hero-stats">
+        <div class="hero-stat"><div class="val val-red" id="hero-res">--</div><div class="lbl">Resistance (kN)</div></div>
+        <div class="hero-stat"><div class="val val-blue" id="hero-power">--</div><div class="lbl">Power (MW)</div></div>
+        <div class="hero-stat"><div class="val val-orange" id="hero-fuel">--</div><div class="lbl">Fuel (t/day)</div></div>
+        <div class="hero-stat"><div class="val val-teal" id="hero-co2">--</div><div class="lbl">CO₂ (t/day)</div></div>
+      </div>
+    </div>
+
+    <!-- Problem Section -->
+    <div class="section" style="padding-top:0">
+      <div class="section-label">The Problem</div>
+      <h2 class="section-title">Rough seas silently drain your fuel budget</h2>
+      <div class="problem-cards">
+        <div class="problem-card">
+          <div class="icon-wrap icon-red">⛈</div>
+          <h3>Fuel Surge</h3>
+          <p>Rough sea conditions can increase ship resistance by 30–80%, directly driving fuel consumption up.</p>
+        </div>
+        <div class="problem-card">
+          <div class="icon-wrap icon-orange">🌊</div>
+          <h3>Hidden Emissions</h3>
+          <p>CO₂ output scales with fuel burn. Unchecked sea states can add hundreds of tonnes per voyage.</p>
+        </div>
+        <div class="problem-card">
+          <div class="icon-wrap icon-blue">📊</div>
+          <h3>No Simple Tools</h3>
+          <p>Mariners lack accessible tools to visualize how wave height maps to real operational cost.</p>
+        </div>
+        <div class="problem-card">
+          <div class="icon-wrap icon-teal">🧭</div>
+          <h3>Reactive Decisions</h3>
+          <p>Route and speed decisions are often reactive — made after fuel budgets are already blown.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Solution Section -->
+    <div class="section" style="padding-top:0">
+      <div class="section-label">The Solution</div>
+      <h2 class="section-title">Predict → Simulate → Decide</h2>
+      <div class="problem-cards">
+        <div class="problem-card" style="border-color:rgba(0,201,184,0.2)">
+          <div class="icon-wrap icon-teal">🔮</div>
+          <h3>Wave Prediction</h3>
+          <p>Use time-series trend analysis to forecast upcoming wave conditions before they impact operations.</p>
+        </div>
+        <div class="problem-card" style="border-color:rgba(26,108,245,0.2)">
+          <div class="icon-wrap icon-blue">⚙️</div>
+          <h3>Impact Simulation</h3>
+          <p>Physics-based equations compute resistance, power draw, fuel consumption and CO₂ in real time.</p>
+        </div>
+        <div class="problem-card" style="border-color:rgba(245,140,26,0.2)">
+          <div class="icon-wrap icon-orange">🎯</div>
+          <h3>Decision Support</h3>
+          <p>Rule-based, explainable recommendations tell you exactly when to slow down or reroute.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WAVE PREDICTION PAGE -->
+  <div id="page-wave" class="page">
+    <div class="wave-page">
+      <div class="page-header">
+        <div class="page-title">Wave Prediction</div>
+        <div class="page-sub">Real-time wave height analysis and short-term forecasting</div>
+      </div>
+      <div class="wave-layout">
+        <div>
+          <div class="input-panel">
+            <div class="panel-title">Wave Parameters</div>
+            <div class="input-group">
+              <div class="input-label">
+                <span>Current Wave Height</span>
+                <span class="input-val" id="wave-cur-val">2.5m</span>
+              </div>
+              <input type="range" id="wave-cur" min="0" max="10" step="0.1" value="2.5" oninput="updateWavePage()" style="--pct:25%">
+            </div>
+            <div class="input-group">
+              <div class="input-label">
+                <span>Wind Speed (knots)</span>
+                <span class="input-val" id="wind-val">18 kn</span>
+              </div>
+              <input type="range" id="wind-speed" min="0" max="60" step="1" value="18" oninput="updateWavePage()" style="--pct:30%">
+            </div>
+            <div class="input-group">
+              <div class="input-label">
+                <span>Wave Period (s)</span>
+                <span class="input-val" id="period-val">8s</span>
+              </div>
+              <input type="range" id="wave-period" min="3" max="20" step="0.5" value="8" oninput="updateWavePage()" style="--pct:38%">
+            </div>
+
+            <div class="prediction-display">
+              <div class="pred-label">Predicted Next Wave Height</div>
+              <div class="pred-val" id="pred-val">2.8<span class="pred-unit">m</span></div>
+              <div id="trend-badge" class="trend-badge trend-inc">↑ Increasing</div>
+            </div>
+
+            <div style="margin-top:20px">
+              <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px">Sea State Classification</div>
+              <div id="sea-state-display" style="padding:14px;border-radius:10px;background:rgba(26,108,245,0.06);border:1px solid var(--border-subtle)">
+                <div style="font-size:16px;font-weight:700;color:var(--orange-mod)" id="sea-state-name">Moderate Sea (SS3)</div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:4px" id="sea-state-desc">Significant wave height 1.25–2.5m. Moderate resistance impact.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="chart-card" style="height:300px">
+            <div class="chart-title">Wave Height Time Series — 24h History + 4h Forecast</div>
+            <div class="chart-wrap" style="height:240px">
+              <canvas id="waveTimeChart" role="img" aria-label="Wave height time series showing historical data and prediction"></canvas>
+            </div>
+          </div>
+
+          <div class="transparency-card" style="margin-top:16px">
+            <div class="transparency-title">⚗ Model Transparency</div>
+            <div class="model-eq">
+              <span class="eq-highlight">Prediction:</span> Ĥ(t+1) = H(t) + α × ΔH + β × wind_factor<br>
+              <span class="eq-highlight">Wave-Wind:</span> H_sig ≈ 0.0248 × V² (simplified Beaufort)<br>
+              <span class="eq-highlight">Trend:</span> Based on last 3 observations — linear regression<br>
+              <span class="eq-highlight">Accuracy:</span> Valid for 1–4h short-term horizon only
+            </div>
+            <p style="font-size:12px;color:var(--text-muted);line-height:1.7">This is a simplified physical model for educational and planning use. Not a substitute for certified meteorological systems. Prediction accuracy degrades beyond 4h horizon.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIMULATION PAGE -->
+  <div id="page-sim" class="page">
+    <div class="sim-page">
+      <div class="page-header">
+        <div class="page-title">Ship Performance Simulation</div>
+        <div class="page-sub">Adjust sea conditions and ship parameters to see real-time impact on fuel and emissions</div>
+      </div>
+      <div class="sim-layout">
+        <!-- Input panel -->
+        <div class="input-panel">
+          <div class="panel-title">Simulation Inputs</div>
+          
+          <div class="input-group">
+            <div class="input-label">
+              <span>Wave Height</span>
+              <span class="input-val" id="sim-wave-val">2.5m</span>
+            </div>
+            <input type="range" id="sim-wave" min="0" max="10" step="0.1" value="2.5" oninput="runSimulation()" style="--pct:25%">
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-top:4px">
+              <span>0m Calm</span><span>5m High</span><span>10m Storm</span>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <div class="input-label">
+              <span>Ship Speed</span>
+              <span class="input-val" id="sim-speed-val">16 kn</span>
+            </div>
+            <input type="range" id="sim-speed" min="6" max="24" step="0.5" value="16" oninput="runSimulation()" style="--pct:55%">
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-top:4px">
+              <span>6 kn</span><span>15 kn</span><span>24 kn</span>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <div class="input-label">
+              <span>Ship Displacement</span>
+              <span class="input-val" id="sim-disp-val">50,000 t</span>
+            </div>
+            <input type="range" id="sim-disp" min="10000" max="200000" step="1000" value="50000" oninput="runSimulation()" style="--pct:22%">
+          </div>
+
+          <div class="input-group">
+            <div class="input-label"><span>Sea Condition</span></div>
+            <div class="condition-pills">
+              <div class="cond-pill calm" onclick="setCondition('calm')">Calm</div>
+              <div class="cond-pill mod active" onclick="setCondition('mod')">Moderate</div>
+              <div class="cond-pill rough" onclick="setCondition('rough')">Rough</div>
+              <div class="cond-pill severe" onclick="setCondition('severe')">Severe</div>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <div class="input-label">
+              <span>Engine Type</span>
+              <span class="input-val" id="engine-type-val">2-Stroke</span>
+            </div>
+            <div class="condition-pills">
+              <div class="cond-pill calm active" id="eng-2s" onclick="setEngine('2stroke')">2-Stroke</div>
+              <div class="cond-pill mod" id="eng-4s" onclick="setEngine('4stroke')">4-Stroke</div>
+              <div class="cond-pill rough" id="eng-elec" onclick="setEngine('electric')">Electric</div>
+            </div>
+          </div>
+
+          <button class="run-btn" onclick="runSimulation()">▶ Run Simulation</button>
+
+          <div class="transparency-card" style="margin-top:16px">
+            <div class="transparency-title" style="font-size:11px">⚗ Model</div>
+            <div style="font-size:11px;color:var(--text-muted);line-height:1.8;font-family:monospace">
+              R_total = R_calm × (1 + k×H²)<br>
+              P = R × v / η<br>
+              FC = P × sfoc × t<br>
+              CO₂ = FC × 3.206
+            </div>
+          </div>
+        </div>
+
+        <!-- Output area -->
+        <div class="output-panel">
+          <!-- Metrics -->
+          <div class="metric-grid">
+            <div class="metric-card">
+              <span class="metric-icon">⚓</span>
+              <div class="metric-val val-blue" id="out-resistance">420</div>
+              <div class="metric-unit">kN</div>
+              <div class="metric-lbl">Resistance</div>
+              <div class="metric-delta delta-ok" id="delta-res">Baseline</div>
+            </div>
+            <div class="metric-card">
+              <span class="metric-icon">⚡</span>
+              <div class="metric-val val-teal" id="out-power">8.2</div>
+              <div class="metric-unit">MW</div>
+              <div class="metric-lbl">Power Required</div>
+              <div class="metric-delta" id="delta-pow">—</div>
+            </div>
+            <div class="metric-card">
+              <span class="metric-icon">🛢</span>
+              <div class="metric-val val-orange" id="out-fuel">42</div>
+              <div class="metric-unit">t/day</div>
+              <div class="metric-lbl">Fuel Consumption</div>
+              <div class="metric-delta" id="delta-fuel">—</div>
+            </div>
+            <div class="metric-card">
+              <span class="metric-icon">💨</span>
+              <div class="metric-val val-red" id="out-co2">134</div>
+              <div class="metric-unit">t/day</div>
+              <div class="metric-lbl">CO₂ Emission</div>
+              <div class="metric-delta" id="delta-co2">—</div>
+            </div>
+          </div>
+
+          <!-- Decision Panel -->
+          <div class="decision-card">
+            <div class="decision-header">
+              <div class="decision-indicator" id="dec-dot" style="background:var(--orange-mod);color:var(--orange-mod)"></div>
+              <div class="decision-title">Operational Recommendation</div>
+            </div>
+            <div class="recommendation-text" id="rec-text">
+              <strong>Moderate sea conditions detected.</strong> Consider a slight speed reduction of 5–8% to reduce wave resistance and improve fuel efficiency. Monitor wave trends for the next 2–4 hours before committing to route adjustment.
+            </div>
+            <div class="rationale-tags" id="rec-tags">
+              <div class="rationale-tag">Wave Height: 2.5m</div>
+              <div class="rationale-tag">+18% Resistance</div>
+              <div class="rationale-tag">Rule-based logic</div>
+              <div class="rationale-tag">Transparent</div>
+            </div>
+          </div>
+
+          <!-- Charts -->
+          <div class="chart-grid">
+            <div class="chart-card">
+              <div class="chart-title">Resistance vs Wave Height</div>
+              <div class="chart-wrap">
+                <canvas id="resChart" role="img" aria-label="Line chart showing resistance increasing with wave height"></canvas>
+              </div>
+            </div>
+            <div class="chart-card">
+              <div class="chart-title">Fuel & CO₂ vs Wave Height</div>
+              <div class="chart-wrap">
+                <canvas id="fuelChart" role="img" aria-label="Line chart showing fuel consumption and CO₂ emissions versus wave height"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VISUALIZATION PAGE -->
+  <div id="page-viz" class="page">
+    <div class="sim-page">
+      <div class="page-header">
+        <div class="page-title">Emissions Visualization</div>
+        <div class="page-sub">Multi-scenario comparison and sea state impact analysis</div>
+      </div>
+
+      <!-- Comparison Table -->
+      <div class="chart-card" style="margin-bottom:24px">
+        <div class="chart-title">Sea Condition Comparison Table</div>
+        <table class="comp-table" id="comp-table">
+          <thead>
+            <tr>
+              <th>Condition</th>
+              <th>Wave Height</th>
+              <th>Resistance (kN)</th>
+              <th>Power (MW)</th>
+              <th>Fuel (t/day)</th>
+              <th>CO₂ (t/day)</th>
+              <th>vs Calm</th>
+            </tr>
+          </thead>
+          <tbody id="comp-tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Charts -->
+      <div class="chart-grid" style="margin-bottom:24px">
+        <div class="chart-card">
+          <div class="chart-title">Wave Height → Fuel Consumption</div>
+          <div class="chart-wrap" style="height:240px">
+            <canvas id="vizFuelChart" role="img" aria-label="Bar chart of fuel consumption across sea conditions"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Wave Height → CO₂ Emissions</div>
+          <div class="chart-wrap" style="height:240px">
+            <canvas id="vizCO2Chart" role="img" aria-label="Bar chart of CO2 emissions across sea conditions"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">Speed vs Fuel — Multi-Wave Scenario Analysis</div>
+        <div class="chart-wrap" style="height:260px">
+          <canvas id="multiChart" role="img" aria-label="Multi-line chart comparing fuel consumption at different wave heights across ship speeds"></canvas>
+        </div>
+      </div>
+
+      <!-- Model transparency full -->
+      <div class="transparency-card" style="margin-top:24px">
+        <div class="transparency-title">⚗ Full Model Transparency</div>
+        <div class="model-eq">
+          <span class="eq-highlight">Resistance Model:</span>  R_total = R_calm × (1 + k × H²)<br>
+          — where k = 0.015 (empirical wave resistance coefficient)<br>
+          — H = significant wave height in metres<br><br>
+          <span class="eq-highlight">Power Model:</span>  P = (R_total × v) / η_propulsive<br>
+          — v = ship speed in m/s, η = 0.65 (2-stroke efficiency)<br><br>
+          <span class="eq-highlight">Fuel Consumption:</span>  FC = P × SFOC × 24 / 1e6<br>
+          — SFOC = 175 g/kWh (Specific Fuel Oil Consumption)<br><br>
+          <span class="eq-highlight">CO₂ Emissions:</span>  CO₂ = FC × 3.206<br>
+          — 3.206 tCO₂/t HFO (IPCC emission factor for Heavy Fuel Oil)
+        </div>
+        <p style="font-size:12px;color:var(--text-muted);line-height:1.7">All relationships are proportional — this is a simplified first-principles model designed for education, planning, and decision support. Not certified for regulatory compliance. For regulatory CII/EEXI calculations use class-approved tools.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ──────────────────────────────────────────────
+// CORE SIMULATION ENGINE
+// ──────────────────────────────────────────────
+const ENGINES = {
+  '2stroke': { sfoc: 175, eta: 0.65 },
+  '4stroke': { sfoc: 210, eta: 0.60 },
+  'electric': { sfoc: 160, eta: 0.80 }
+};
+
+let currentEngine = '2stroke';
+let currentCondition = 'mod';
+
+function calcResistance(waveH, speed, disp, cond) {
+  const R0 = 1.5 * Math.pow(disp, 0.6) * Math.pow(speed, 1.8) / 1000;
+  const k = cond === 'severe' ? 0.025 : cond === 'rough' ? 0.020 : 0.015;
+  return R0 * (1 + k * waveH * waveH);
+}
+
+function calcPower(resistance, speed, engine) {
+  const v = speed * 0.5144;
+  return (resistance * v) / (ENGINES[engine].eta * 1000);
+}
+
+function calcFuel(powerMW, engine) {
+  return powerMW * 1000 * ENGINES[engine].sfoc * 24 / 1e6;
+}
+
+function calcCO2(fuel) { return fuel * 3.206; }
+
+function getCalm(speed, disp) {
+  const R = calcResistance(0, speed, disp, 'calm');
+  const P = calcPower(R, speed, currentEngine);
+  const F = calcFuel(P, currentEngine);
+  return { R, P, F, CO2: calcCO2(F) };
+}
+
+// ──────────────────────────────────────────────
+// DECISION ENGINE
+// ──────────────────────────────────────────────
+function getRecommendation(waveH, pctIncrease) {
+  if (waveH < 1.5) {
+    return {
+      color: 'var(--teal-accent)',
+      text: '<strong>Calm sea conditions.</strong> Maintain current speed and course. Fuel efficiency is at optimum. Continue monitoring for any developing swell systems on the horizon.',
+      tags: ['Wave: ' + waveH.toFixed(1) + 'm', 'Maintain speed', 'Optimal efficiency', 'Monitor conditions'],
+      label: 'All Clear'
+    };
+  } else if (waveH < 3.0) {
+    return {
+      color: 'var(--blue-light)',
+      text: '<strong>Light to moderate wave conditions.</strong> Operations are normal but resistance is elevated. Consider monitoring fuel logs more frequently. No immediate action required.',
+      tags: ['Wave: ' + waveH.toFixed(1) + 'm', '+' + pctIncrease + '% resistance', 'Monitor fuel logs', 'No action yet'],
+      label: 'Monitor'
+    };
+  } else if (waveH < 5.0) {
+    return {
+      color: 'var(--orange-mod)',
+      text: '<strong>Moderate-to-high wave conditions detected.</strong> Consider a speed reduction of <strong>5–10%</strong> to significantly reduce wave resistance and improve fuel efficiency. Re-evaluate route if conditions persist beyond 6 hours.',
+      tags: ['Wave: ' + waveH.toFixed(1) + 'm', 'Reduce speed 5–10%', 'Possible reroute', '+' + pctIncrease + '% fuel burn'],
+      label: 'Speed Reduction Advised'
+    };
+  } else if (waveH < 7.5) {
+    return {
+      color: 'var(--red-rough)',
+      text: '<strong>Rough sea — significant operational impact.</strong> Reduce speed by <strong>10–20%</strong> immediately to limit resistance surge and prevent mechanical stress. Evaluate alternative route corridor to avoid high-sea zone.',
+      tags: ['Wave: ' + waveH.toFixed(1) + 'm', 'Reduce speed 10–20%', 'Route adjustment', 'High resistance zone'],
+      label: 'Reduce Speed Now'
+    };
+  } else {
+    return {
+      color: '#ff4444',
+      text: '<strong>Severe storm conditions — critical action required.</strong> <strong>Reduce speed by 20–30%</strong> and initiate route adjustment to avoid the storm corridor. Consider heaving to if safety is at risk. Fuel efficiency is secondary to vessel safety.',
+      tags: ['Wave: ' + waveH.toFixed(1) + 'm', 'SEVERE — Act Now', 'Reroute required', '+' + pctIncrease + '% emissions'],
+      label: 'Emergency Protocol'
+    };
+  }
+}
+
+// ──────────────────────────────────────────────
+// RANGE SLIDER FILL UPDATE
+// ──────────────────────────────────────────────
+function updateSliderFill(el) {
+  const pct = ((el.value - el.min) / (el.max - el.min)) * 100;
+  el.style.setProperty('--pct', pct + '%');
+}
+document.querySelectorAll('input[type=range]').forEach(el => {
+  el.addEventListener('input', () => updateSliderFill(el));
+  updateSliderFill(el);
+});
+
+// ──────────────────────────────────────────────
+// CHART SETUP
+// ──────────────────────────────────────────────
+const chartDefaults = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { display: false } },
+  scales: {
+    x: { grid: { color: 'rgba(26,108,245,0.08)' }, ticks: { color: '#7a9ac8', font: { size: 11 } } },
+    y: { grid: { color: 'rgba(26,108,245,0.08)' }, ticks: { color: '#7a9ac8', font: { size: 11 } } }
+  }
+};
+
+// Resistance vs Wave chart
+let resChart = new Chart(document.getElementById('resChart'), {
+  type: 'line',
+  data: {
+    labels: Array.from({length:21}, (_,i) => (i*0.5).toFixed(1)),
+    datasets: [{
+      label: 'Resistance (kN)',
+      data: [],
+      borderColor: '#3b8fff',
+      backgroundColor: 'rgba(59,143,255,0.08)',
+      borderWidth: 2.5,
+      fill: true,
+      tension: 0.4,
+      pointRadius: 0,
+      pointHoverRadius: 5,
+    }]
+  },
+  options: { ...chartDefaults }
+});
+
+// Fuel & CO2 vs Wave chart
+let fuelChart = new Chart(document.getElementById('fuelChart'), {
+  type: 'line',
+  data: {
+    labels: Array.from({length:21}, (_,i) => (i*0.5).toFixed(1)),
+    datasets: [
+      {
+        label: 'Fuel (t/day)',
+        data: [],
+        borderColor: '#f58c1a',
+        backgroundColor: 'rgba(245,140,26,0.08)',
+        borderWidth: 2.5, fill: true, tension: 0.4, pointRadius: 0,
+        borderDash: [],
+      },
+      {
+        label: 'CO₂ (t/day)',
+        data: [],
+        borderColor: '#f53c2a',
+        backgroundColor: 'rgba(245,60,42,0.05)',
+        borderWidth: 2, fill: false, tension: 0.4, pointRadius: 0,
+        borderDash: [5,3],
+      }
+    ]
+  },
+  options: { ...chartDefaults, plugins: { legend: { display: true, labels: { color: '#7a9ac8', font:{size:11}, boxWidth:12, boxHeight:2 } } } }
+});
+
+// Wave Time Chart
+let waveTimeChart;
+function initWaveTimeChart() {
+  const now = Date.now();
+  const hist = Array.from({length:24}, (_,i) => ({
+    x: new Date(now - (23-i)*3600000),
+    y: +(1.5 + Math.sin(i*0.4)*1.2 + Math.random()*0.4).toFixed(2)
+  }));
+  const ctx = document.getElementById('waveTimeChart');
+  if (waveTimeChart) waveTimeChart.destroy();
+  waveTimeChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      datasets: [
+        {
+          label: 'Historical',
+          data: hist,
+          borderColor: '#3b8fff',
+          backgroundColor: 'rgba(59,143,255,0.08)',
+          borderWidth: 2, fill: true, tension: 0.4, pointRadius: 0,
+        },
+        {
+          label: 'Forecast',
+          data: [],
+          borderColor: '#00c9b8',
+          borderWidth: 2, borderDash: [6,3], fill: false, tension: 0.4, pointRadius: 4,
+          pointBackgroundColor: '#00c9b8',
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#7a9ac8', font:{size:11}, boxWidth:12, boxHeight:2 } } },
+      scales: {
+        x: { type:'time', time:{unit:'hour',displayFormats:{hour:'HH:mm'}}, grid:{color:'rgba(26,108,245,0.08)'}, ticks:{color:'#7a9ac8',font:{size:10}} },
+        y: { min:0, max:10, title:{display:true,text:'Height (m)',color:'#7a9ac8',font:{size:11}}, grid:{color:'rgba(26,108,245,0.08)'}, ticks:{color:'#7a9ac8',font:{size:11}} }
+      }
+    }
+  });
+  return {hist, now};
+}
+
+// Viz charts
+let vizFuelChart, vizCO2Chart, multiChart;
+function initVizCharts() {
+  const conditions = ['Calm\n0.5m', 'Light\n1.5m', 'Moderate\n3m', 'Rough\n5m', 'Severe\n8m'];
+  const waves = [0.5, 1.5, 3, 5, 8];
+  const speed = 16, disp = 50000;
+  const fuel = waves.map(h => +calcFuel(calcPower(calcResistance(h, speed, disp, 'mod'), speed, currentEngine), currentEngine).toFixed(1));
+  const co2 = fuel.map(f => +(f * 3.206).toFixed(1));
+
+  if (vizFuelChart) vizFuelChart.destroy();
+  vizFuelChart = new Chart(document.getElementById('vizFuelChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Calm', 'Light', 'Moderate', 'Rough', 'Severe'],
+      datasets: [{
+        data: fuel,
+        backgroundColor: ['rgba(0,201,184,0.7)','rgba(59,143,255,0.7)','rgba(245,140,26,0.7)','rgba(245,60,42,0.7)','rgba(180,0,0,0.8)'],
+        borderColor: ['#00c9b8','#3b8fff','#f58c1a','#f53c2a','#cc0000'],
+        borderWidth: 1.5, borderRadius: 6,
+      }]
+    },
+    options: { ...chartDefaults, plugins: { legend: {display:false}, tooltip: { callbacks: { label: c => c.raw + ' t/day' } } } }
+  });
+
+  if (vizCO2Chart) vizCO2Chart.destroy();
+  vizCO2Chart = new Chart(document.getElementById('vizCO2Chart'), {
+    type: 'bar',
+    data: {
+      labels: ['Calm', 'Light', 'Moderate', 'Rough', 'Severe'],
+      datasets: [{
+        data: co2,
+        backgroundColor: ['rgba(0,201,184,0.5)','rgba(59,143,255,0.5)','rgba(245,140,26,0.5)','rgba(245,60,42,0.6)','rgba(180,0,0,0.7)'],
+        borderColor: ['#00c9b8','#3b8fff','#f58c1a','#f53c2a','#cc0000'],
+        borderWidth: 1.5, borderRadius: 6,
+      }]
+    },
+    options: { ...chartDefaults, plugins: { legend: {display:false} } }
+  });
+
+  // Multi-line speed vs fuel
+  const speeds = Array.from({length:10}, (_,i) => 8 + i*2);
+  const waveScenarios = [
+    {h:0.5, color:'#00c9b8', label:'Calm (0.5m)', dash:[]},
+    {h:2.5, color:'#3b8fff', label:'Moderate (2.5m)', dash:[]},
+    {h:5.0, color:'#f58c1a', label:'Rough (5m)', dash:[5,3]},
+    {h:8.0, color:'#f53c2a', label:'Storm (8m)', dash:[3,3]},
+  ];
+  if (multiChart) multiChart.destroy();
+  multiChart = new Chart(document.getElementById('multiChart'), {
+    type: 'line',
+    data: {
+      labels: speeds,
+      datasets: waveScenarios.map(sc => ({
+        label: sc.label,
+        data: speeds.map(s => +calcFuel(calcPower(calcResistance(sc.h, s, disp, 'mod'), s, currentEngine), currentEngine).toFixed(1)),
+        borderColor: sc.color, borderWidth: 2.5, fill: false, tension: 0.4, pointRadius: 3,
+        borderDash: sc.dash, pointBackgroundColor: sc.color,
+      }))
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#7a9ac8', font:{size:11}, boxWidth:12, boxHeight:2 }, position:'top' } },
+      scales: {
+        x: { title:{display:true,text:'Speed (kn)',color:'#7a9ac8',font:{size:11}}, grid:{color:'rgba(26,108,245,0.08)'}, ticks:{color:'#7a9ac8',font:{size:11}} },
+        y: { title:{display:true,text:'Fuel t/day',color:'#7a9ac8',font:{size:11}}, grid:{color:'rgba(26,108,245,0.08)'}, ticks:{color:'#7a9ac8',font:{size:11}} }
+      }
+    }
+  });
+
+  // Comparison table
+  const tbody = document.getElementById('comp-tbody');
+  const condList = [
+    {name:'Calm Sea', h:0.5, dot:'#00c9b8'},
+    {name:'Light Sea', h:1.5, dot:'#3b8fff'},
+    {name:'Moderate Sea', h:3.0, dot:'#f58c1a'},
+    {name:'Rough Sea', h:5.0, dot:'#f53c2a'},
+    {name:'Severe Storm', h:8.0, dot:'#cc2200'},
+  ];
+  const calm = condList[0];
+  const calmFuel = calcFuel(calcPower(calcResistance(calm.h, speed, disp, 'calm'), speed, currentEngine), currentEngine);
+  tbody.innerHTML = condList.map(c => {
+    const R = calcResistance(c.h, speed, disp, 'mod');
+    const P = calcPower(R, speed, currentEngine);
+    const F = calcFuel(P, currentEngine);
+    const C = F * 3.206;
+    const pct = Math.round((F/calmFuel - 1)*100);
+    return `<tr>
+      <td><span class="cond-dot" style="background:${c.dot}"></span>${c.name}</td>
+      <td>${c.h}m</td>
+      <td>${R.toFixed(0)}</td>
+      <td>${P.toFixed(2)}</td>
+      <td>${F.toFixed(1)}</td>
+      <td>${C.toFixed(1)}</td>
+      <td style="color:${pct > 30 ? '#f53c2a' : pct > 10 ? '#f58c1a' : '#00c9b8'}; font-weight:600">${pct > 0 ? '+'+pct : pct}%</td>
+    </tr>`;
+  }).join('');
+}
+
+// ──────────────────────────────────────────────
+// MAIN SIMULATION RUN
+// ──────────────────────────────────────────────
+function runSimulation() {
+  const waveH = +document.getElementById('sim-wave').value;
+  const speed = +document.getElementById('sim-speed').value;
+  const disp = +document.getElementById('sim-disp').value;
+
+  document.getElementById('sim-wave-val').textContent = waveH.toFixed(1) + 'm';
+  document.getElementById('sim-speed-val').textContent = speed.toFixed(1) + ' kn';
+  document.getElementById('sim-disp-val').textContent = disp.toLocaleString() + ' t';
+  updateSliderFill(document.getElementById('sim-wave'));
+  updateSliderFill(document.getElementById('sim-speed'));
+  updateSliderFill(document.getElementById('sim-disp'));
+
+  const calm = getCalm(speed, disp);
+  const R = calcResistance(waveH, speed, disp, currentCondition);
+  const P = calcPower(R, speed, currentEngine);
+  const F = calcFuel(P, currentEngine);
+  const CO2 = calcCO2(F);
+  const pctRes = Math.round((R/calm.R - 1)*100);
+  const pctFuel = Math.round((F/calm.F - 1)*100);
+
+  document.getElementById('out-resistance').textContent = R.toFixed(0);
+  document.getElementById('out-power').textContent = P.toFixed(2);
+  document.getElementById('out-fuel').textContent = F.toFixed(1);
+  document.getElementById('out-co2').textContent = CO2.toFixed(1);
+
+  const setDelta = (id, pct) => {
+    const el = document.getElementById(id);
+    if (pct <= 5) { el.textContent = 'Baseline'; el.className='metric-delta delta-ok'; }
+    else { el.textContent = '+'+pct+'%'; el.className='metric-delta delta-up'; }
+  };
+  setDelta('delta-res', pctRes);
+  setDelta('delta-pow', Math.round((P/calcPower(calm.R, speed, currentEngine) - 1)*100));
+  setDelta('delta-fuel', pctFuel);
+  setDelta('delta-co2', pctFuel);
+
+  // Update decision
+  const rec = getRecommendation(waveH, pctFuel);
+  document.getElementById('dec-dot').style.background = rec.color;
+  document.getElementById('dec-dot').style.color = rec.color;
+  document.getElementById('rec-text').innerHTML = rec.text;
+  document.getElementById('rec-tags').innerHTML = rec.tags.map(t => `<div class="rationale-tag">${t}</div>`).join('');
+
+  // Update hero stats
+  document.getElementById('hero-res').textContent = R.toFixed(0);
+  document.getElementById('hero-power').textContent = P.toFixed(2);
+  document.getElementById('hero-fuel').textContent = F.toFixed(1);
+  document.getElementById('hero-co2').textContent = CO2.toFixed(1);
+
+  // Update line charts
+  const waves = Array.from({length:21}, (_,i) => i*0.5);
+  resChart.data.datasets[0].data = waves.map(h => +calcResistance(h, speed, disp, currentCondition).toFixed(0));
+  resChart.update('none');
+  fuelChart.data.datasets[0].data = waves.map(h => +calcFuel(calcPower(calcResistance(h, speed, disp, currentCondition), speed, currentEngine), currentEngine).toFixed(1));
+  fuelChart.data.datasets[1].data = waves.map(h => +calcCO2(calcFuel(calcPower(calcResistance(h, speed, disp, currentCondition), speed, currentEngine), currentEngine)).toFixed(1));
+  fuelChart.update('none');
+}
+
+function setCondition(cond) {
+  currentCondition = cond;
+  document.querySelectorAll('.cond-pill').forEach(p => {
+    if (['calm','mod','rough','severe'].some(c => p.classList.contains(c) && !p.id.startsWith('eng-'))) p.classList.remove('active');
+  });
+  document.querySelectorAll('.cond-pill.' + cond).forEach(p => { if(!p.id.startsWith('eng-')) p.classList.add('active'); });
+  runSimulation();
+}
+
+function setEngine(eng) {
+  currentEngine = eng;
+  document.getElementById('eng-2s').className = 'cond-pill calm' + (eng==='2stroke'?' active':'');
+  document.getElementById('eng-4s').className = 'cond-pill mod' + (eng==='4stroke'?' active':'');
+  document.getElementById('eng-elec').className = 'cond-pill rough' + (eng==='electric'?' active':'');
+  const names = {'2stroke':'2-Stroke','4stroke':'4-Stroke','electric':'Electric'};
+  document.getElementById('engine-type-val').textContent = names[eng];
+  runSimulation();
+}
+
+// ──────────────────────────────────────────────
+// WAVE PREDICTION PAGE
+// ──────────────────────────────────────────────
+let wavePageData = null;
+
+function updateWavePage() {
+  const h = +document.getElementById('wave-cur').value;
+  const wind = +document.getElementById('wind-speed').value;
+  const period = +document.getElementById('wave-period').value;
+  updateSliderFill(document.getElementById('wave-cur'));
+  updateSliderFill(document.getElementById('wind-speed'));
+  updateSliderFill(document.getElementById('wave-period'));
+
+  document.getElementById('wave-cur-val').textContent = h.toFixed(1) + 'm';
+  document.getElementById('wind-val').textContent = wind + ' kn';
+  document.getElementById('period-val').textContent = period.toFixed(1) + 's';
+
+  // Simplified prediction
+  const windH = 0.0248 * Math.pow(wind * 0.5144, 2) * 0.5;
+  const alpha = 0.3, beta = 0.15;
+  const predicted = Math.min(10, Math.max(0, h + alpha * (windH - h) * 0.3 + beta * Math.sin(period * 0.2)));
+  const diff = predicted - h;
+
+  document.getElementById('pred-val').innerHTML = predicted.toFixed(1) + '<span class="pred-unit">m</span>';
+
+  const badge = document.getElementById('trend-badge');
+  if (diff > 0.15) { badge.className='trend-badge trend-inc'; badge.textContent='↑ Increasing'; }
+  else if (diff < -0.15) { badge.className='trend-badge trend-dec'; badge.textContent='↓ Decreasing'; }
+  else { badge.className='trend-badge trend-stable'; badge.textContent='→ Stable'; }
+
+  // Sea state
+  let ssName, ssDesc;
+  if (h < 0.5) { ssName = 'Calm (SS0–1)'; ssDesc='Negligible waves. Optimal efficiency.'; }
+  else if (h < 1.25) { ssName = 'Slight Sea (SS2)'; ssDesc='Wave height < 1.25m. Minimal resistance impact.'; }
+  else if (h < 2.5) { ssName = 'Moderate Sea (SS3)'; ssDesc='Significant wave 1.25–2.5m. Moderate impact.'; }
+  else if (h < 4.0) { ssName = 'Rough Sea (SS4)'; ssDesc='Significant wave 2.5–4m. Notable fuel increase.'; }
+  else if (h < 6.0) { ssName = 'Very Rough (SS5)'; ssDesc='Waves 4–6m. Serious efficiency loss. Reduce speed.'; }
+  else if (h < 9.0) { ssName = 'High Sea (SS6)'; ssDesc='Waves 6–9m. Severe impact. Route adjustment needed.'; }
+  else { ssName = 'Phenomenal (SS8+)'; ssDesc='Storm conditions. Safety priority. Heave to.'; }
+
+  const colors = {
+    'Calm':'var(--teal-accent)', 'Slight':'var(--blue-light)', 'Moderate':'var(--blue-light)',
+    'Rough':'var(--orange-mod)', 'Very':'var(--red-rough)', 'High':'var(--red-rough)', 'Phenomenal':'#ff4444'
+  };
+  const colorKey = Object.keys(colors).find(k => ssName.startsWith(k)) || 'Calm';
+  document.getElementById('sea-state-name').style.color = colors[colorKey];
+  document.getElementById('sea-state-name').textContent = ssName;
+  document.getElementById('sea-state-desc').textContent = ssDesc;
+
+  // Update wave chart forecast
+  if (waveTimeChart && wavePageData) {
+    const {now} = wavePageData;
+    const forecast = Array.from({length:4}, (_,i) => ({
+      x: new Date(now + (i+1)*3600000),
+      y: +Math.min(10, Math.max(0, h + diff*(i+1) + (Math.random()-0.45)*0.2)).toFixed(2)
+    }));
+    waveTimeChart.data.datasets[1].data = forecast;
+    waveTimeChart.update('none');
+  }
+}
+
+// ──────────────────────────────────────────────
+// PAGE NAVIGATION
+// ──────────────────────────────────────────────
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  const tabs = {home:0, wave:1, sim:2, viz:3};
+  document.querySelectorAll('.tab-btn')[tabs[page]].classList.add('active');
+
+  if (page === 'wave' && !wavePageData) {
+    wavePageData = initWaveTimeChart();
+    updateWavePage();
+  }
+  if (page === 'viz') {
+    initVizCharts();
+  }
+  window.scrollTo(0,0);
+}
+
+// ──────────────────────────────────────────────
+// INIT
+// ──────────────────────────────────────────────
+// Add Chart.js time adapter
+const timeAdapter = document.createElement('script');
+timeAdapter.src = 'https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js';
+timeAdapter.onload = () => { if(document.getElementById('page-wave').classList.contains('active')) initWaveTimeChart(); };
+document.head.appendChild(timeAdapter);
+
+runSimulation();
+</script>
+</body>
+</html>
